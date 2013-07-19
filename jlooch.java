@@ -2,6 +2,8 @@
  *
  * 		Brad Garton, fall 2001
  *
+ Fixed some outdated stuff, Nicholas Prado 2013
+Many uses of stop should be replaced by code that simply modifies some variable to indicate that the target thread should stop running. The target thread should check this variable regularly, and return from its run method in an orderly fashion if the variable indicates that it is to stop running.
 */
 import java.util.*;
 import java.awt.*;
@@ -19,8 +21,10 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 	Button goButton;
 	Button [] onoffs = new Button[4];
 	int [] onoffstates = { 1, 1, 1, 1 };
+	boolean going = false;
+	boolean started = false;
 	myCanvas drawArea;
-	URL netimage;
+	//URL netimage;
 
 	// synthesis stuff
 	DroneNotes droneyThread;
@@ -32,8 +36,8 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 	{
 		jlooch wooflet = new jlooch();
 		AppletFrame f = new AppletFrame("bark!  bark!", wooflet);
-		f.resize(210, 350);
-		f.show();
+		f.setSize(210, 350);
+		f.setVisible(true);
 		f.test();
 		f.setResizable(false);
 	}
@@ -41,10 +45,9 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 	public void init()
 	{
 		Font bfont;
-		int i;
 
-		Color fc = new Color((float)0.1, (float)0.7, (float)0.7);
-		DroneScroll = new Scrollbar(Scrollbar.VERTICAL, 0, 10, 0, 110);
+		Color fc = new Color(0.1f, 0.7f, 0.7f); // ugh. auto to double fooled us both
+		DroneScroll = new Scrollbar(Scrollbar.VERTICAL, 0, 50, 0, 110);
 		DroneScroll.setLocation(20, 45);
 		DroneScroll.setSize(25,200);
 		DroneScroll.setName("drones");
@@ -52,8 +55,8 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		DroneScroll.addAdjustmentListener(this);
 		add(DroneScroll);
 
-		fc = new Color((float)0.2, (float)0.6, (float)0.7);
-		SeqScroll = new Scrollbar(Scrollbar.VERTICAL, 79, 10, 0, 110);
+		fc = new Color(0.2f, 0.6f, 0.7f);
+		SeqScroll = new Scrollbar(Scrollbar.VERTICAL, 79, 50, 0, 110);
 		SeqScroll.setLocation(65, 45);
 		SeqScroll.setSize(25,200);
 		SeqScroll.setName("seqs");
@@ -61,8 +64,8 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		SeqScroll.addAdjustmentListener(this);
 		add(SeqScroll);
 
-		fc = new Color((float)0.3, (float)0.5, (float)0.7);
-		WarbleScroll = new Scrollbar(Scrollbar.VERTICAL, 86, 10, 0, 110);
+		fc = new Color(0.3f, 0.5f, 0.7f);
+		WarbleScroll = new Scrollbar(Scrollbar.VERTICAL, 86, 50, 0, 110);
 		WarbleScroll.setLocation(110, 45);
 		WarbleScroll.setSize(25,200);
 		WarbleScroll.setName("warbles");
@@ -70,8 +73,8 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		WarbleScroll.addAdjustmentListener(this);
 		add(WarbleScroll);
 
-		fc = new Color((float)0.4, (float)0.4, (float)0.7);
-		BurstScroll = new Scrollbar(Scrollbar.VERTICAL, 88, 10, 0, 110);
+		fc = new Color(0.4f, 0.4f, 0.7f);
+		BurstScroll = new Scrollbar(Scrollbar.VERTICAL, 88, 50, 0, 110);
 		BurstScroll.setLocation(155, 45);
 		BurstScroll.setSize(25,200);
 		BurstScroll.setName("bursts");
@@ -79,45 +82,46 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		BurstScroll.addAdjustmentListener(this);
 		add(BurstScroll);
 
-		fc = new Color((float)0.9, (float)0.1, (float)0.2);
-		for (i = 0; i < 4; i++)
+		fc = new Color(0.9f, 0.1f, 0.2f);
+		for (int ind = 0; ind < 4; ind++)
 		{
-			onoffs[i] = new Button();
-			onoffs[i].setLocation(i*45+27, 30);
-			onoffs[i].setSize(10, 10);
-			onoffs[i].setBackground(fc);
-			onoffs[i].setForeground(Color.yellow);
-			onoffs[i].setLabel("+");
-			onoffs[i].addActionListener(this);
-			add(onoffs[i]);
+			onoffs[ind] = new Button();
+			onoffs[ind].setLocation(ind*45+27, 30);
+			onoffs[ind].setSize(10, 10);
+			onoffs[ind].setBackground(fc);
+			onoffs[ind].setForeground(Color.yellow);
+			onoffs[ind].setLabel("+");
+			onoffs[ind].addActionListener(this);
+			add(onoffs[ind]);
 		}
 		onoffs[0].setName("drones");
 		onoffs[1].setName("seqs");
 		onoffs[2].setName("warbles");
 		onoffs[3].setName("bursts");
 
-		fc = new Color((float)0.2, (float)0.7, (float)0.8);
+		fc = new Color(0.2f, 0.7f, 0.8f);
 		goButton = new Button();
 		goButton.setLocation(65, 270);
 		goButton.setSize(70, 20);
 		goButton.setBackground(fc);
 		bfont = new Font("Times", Font.ITALIC, 10);
 		goButton.setFont(bfont);
-		fc = new Color((float)0.9, (float)0.1, (float)0.1);
+		fc = new Color(0.9f, 0.1f, 0.1f);
 		goButton.setForeground(fc);
 		goButton.setLabel("drono...");
 		goButton.setName("main");
 		goButton.addActionListener(this);
 		add(goButton);
 
-		try {
+		/*try {
 			netimage = new URL("file:./loochicon.gif");
-//			netimage = new URL("http://music.columbia.edu/~brad/jlooch/loochicon.gif");
+			//netimage = new URL("http://music.columbia.edu/~brad/jlooch/loochicon.gif");
 		} catch(MalformedURLException e) {
 			System.err.println("no image");
 			return;
-		}
-		drawArea = new myCanvas(netimage);
+		}*/
+		
+		drawArea = new myCanvas();
 		drawArea.setBackground(Color.white);
 		drawArea.setSize(210, 350);
 		drawArea.setLocation(0, 0);
@@ -145,7 +149,7 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 	{
 		try
 		{
-			if (going == 1) {
+			if (going) {
 				if (onoffstates[0] == 1) {
 					droneyThread.stopSound(); }
 				if (onoffstates[1] == 1) {
@@ -155,11 +159,11 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 				if (onoffstates[3] == 1) {
 					burstThread.stopSound(); }
 			}
-			droneyThread.stop();
-			seqThread.stop();
-			warbleThread.stop();
-			burstThread.stop();
-			if (started == 1) {
+			droneyThread = null;
+			seqThread = null;
+			warbleThread = null;
+			burstThread = null;
+			if (started) {
 				Synth.stopEngine();
 			}
 		} catch(SynthException e) {
@@ -176,7 +180,7 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		value =  theScroll.getValue();
 		prob = (double)(100-value)/100.0;
 
-		if (started == 1) {
+		if (started) {
 			if (theScroll.getName() == "drones") {
 				droneyThread.setProb(prob);
 			}
@@ -192,172 +196,60 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		}
 	}
 
-	int going = 0;
-	int started = 0;
 	public void actionPerformed(ActionEvent e)
 	{
-		int switcher = 4;
-		Color c,goc,stopc;
+		int ind = 4;
+		Scrollbar bType = null;
 		Button theButton = (Button)e.getSource();
 
-
-		goc = new Color((float)0.9, (float)0.1, (float)0.2);
-		stopc = new Color((float)0.1, (float)0.8, (float)0.7);
-		if (theButton.getName() == "drones") { switcher = 0; }
-		if (theButton.getName() == "seqs") { switcher = 1; }
-		if (theButton.getName() == "warbles") { switcher = 2; }
-		if (theButton.getName() == "bursts") { switcher = 3; }
-		if (theButton.getName() == "main") { switcher = 4; }
+		if (theButton.getName() == "drones"){
+			ind = 0;
+			bType = DroneScroll;
+		}
+		else if (theButton.getName() == "seqs") {
+			ind = 1;
+			bType = SeqScroll;
+		}
+		else if (theButton.getName() == "warbles") {
+			ind = 2;
+			bType = WarbleScroll;
+		}
+		else if (theButton.getName() == "bursts") {
+			ind = 3;
+			bType = BurstScroll;
+		}
 	    try {
-		switch (switcher) {
-			case 0:
-				if (going == 1) {
-					if (onoffstates[0] == 0) {
-						droneyThread.start();
-						droneyThread.setProb((100.0-(double)DroneScroll.getValue())/100.0);
-						onoffs[0].setBackground(goc);
-						onoffs[0].setForeground(Color.yellow);
-						onoffs[0].setLabel("+");
-						onoffstates[0] = 1;
-					} else {
-						droneyThread.stopSound();
-						onoffs[0].setBackground(stopc);
-						onoffs[0].setForeground(Color.white);
-						onoffs[0].setLabel("-");
-						onoffstates[0] = 0;
-					}
-				} else {
-					if (onoffstates[0] == 0) {
-						onoffs[0].setBackground(goc);
-						onoffs[0].setForeground(Color.yellow);
-						onoffs[0].setLabel("+");
-						onoffstates[0] = 1;
-					} else {
-						onoffs[0].setBackground(stopc);
-						onoffs[0].setForeground(Color.white);
-						onoffs[0].setLabel("-");
-						onoffstates[0] = 0;
-					}
-				}
-				break;
-			case 1:
-				if (going == 1) {
-					if (onoffstates[1] == 0) {
-						seqThread.start();
-						seqThread.setProb((100.0-(double)SeqScroll.getValue())/100.0);
-						onoffs[1].setBackground(goc);
-						onoffs[1].setForeground(Color.yellow);
-						onoffs[1].setLabel("+");
-						onoffstates[1] = 1;
-					} else {
-						seqThread.stopSound();
-						onoffs[1].setBackground(stopc);
-						onoffs[1].setForeground(Color.white);
-						onoffs[1].setLabel("-");
-						onoffstates[1] = 0;
-					}
-				} else {
-					if (onoffstates[1] == 0) {
-						onoffs[1].setBackground(goc);
-						onoffs[1].setForeground(Color.yellow);
-						onoffs[1].setLabel("+");
-						onoffstates[1] = 1;
-					} else {
-						onoffs[1].setBackground(stopc);
-						onoffs[1].setForeground(Color.white);
-						onoffs[1].setLabel("-");
-						onoffstates[1] = 0;
-					}
-				}
-				break;
-			case 2:
-				if (going == 1) {
-					if (onoffstates[2] == 0) {
-						warbleThread.start();
-						warbleThread.setProb((100.0-(double)WarbleScroll.getValue())/100.0);
-						onoffs[2].setBackground(goc);
-						onoffs[2].setForeground(Color.yellow);
-						onoffs[2].setLabel("+");
-						onoffstates[2] = 1;
-					} else {
-						warbleThread.stopSound();
-						onoffs[2].setBackground(stopc);
-						onoffs[2].setForeground(Color.white);
-						onoffs[2].setLabel("-");
-						onoffstates[2] = 0;
-					}
-				} else {
-					if (onoffstates[2] == 0) {
-						onoffs[2].setBackground(goc);
-						onoffs[2].setForeground(Color.yellow);
-						onoffs[2].setLabel("+");
-						onoffstates[2] = 1;
-					} else {
-						onoffs[2].setBackground(stopc);
-						onoffs[2].setForeground(Color.white);
-						onoffs[2].setLabel("-");
-						onoffstates[2] = 0;
-					}
-				}
-				break;
-			case 3:
-				if (going == 1) {
-					if (onoffstates[3] == 0) {
-						burstThread.start();
-						burstThread.setProb((100.0-(double)BurstScroll.getValue())/100.0);
-						onoffs[3].setBackground(goc);
-						onoffs[3].setForeground(Color.yellow);
-						onoffs[3].setLabel("+");
-						onoffstates[3] = 1;
-					} else {
-						burstThread.stopSound();
-						onoffs[3].setBackground(stopc);
-						onoffs[3].setForeground(Color.white);
-						onoffs[3].setLabel("-");
-						onoffstates[3] = 0;
-					}
-				} else {
-					if (onoffstates[3] == 0) {
-						onoffs[3].setBackground(goc);
-						onoffs[3].setForeground(Color.yellow);
-						onoffs[3].setLabel("+");
-						onoffstates[3] = 1;
-					} else {
-						onoffs[3].setBackground(stopc);
-						onoffs[3].setForeground(Color.white);
-						onoffs[3].setLabel("-");
-						onoffstates[3] = 0;
-					}
-				}
-				break;
-			case 4:
-				started = 1;
-				if (going == 1)
+			if ( ind < 4 ) {
+				updateBarColor( ind, bType );
+			} else {
+				started = true;
+				Color col;
+				if (going)
 				{
-					c = new Color((float)0.2, (float)0.7, (float)0.8);
-					goButton.setBackground(c);
-					c = new Color((float)0.9, (float)0.1, (float)0.1);
-					goButton.setForeground(c);
+					col = new Color(0.2f, 0.7f, 0.8f);
+					goButton.setBackground(col);
+					col = new Color(0.9f, 0.1f, 0.1f);
+					goButton.setForeground(col);
 					goButton.setLabel("drono...");
 
 					if (onoffstates[0] == 1) {
 						droneyThread.stopSound();
 					}
-					if (onoffstates[1] == 1) {
+					else if (onoffstates[1] == 1) { // I'm putting elses, but what if these...
 						seqThread.stopSound();
 					}
-					if (onoffstates[2] == 1) {
+					else if (onoffstates[2] == 1) {
 						warbleThread.stopSound();
 					}
-					if (onoffstates[3] == 1) {
+					else if (onoffstates[3] == 1) {
 						burstThread.stopSound();
 					}
-					going = 0;
+					going = false;
 				} else {
-					c = new Color((float)0.3, (float)0.7, (float)0.7);
-					goButton.setBackground(c);
-					c = new Color((float)0.9, (float)0.1, (float)0.1);
-					goButton.setForeground(c);
+					col = new Color(0.3f, 0.7f, 0.7f);
+					goButton.setBackground(col);
+					col = new Color(0.9f, 0.1f, 0.1f);
+					goButton.setForeground(col);
 					goButton.setLabel("StopEm!");
 
 					if (onoffstates[0] == 1) {
@@ -376,15 +268,47 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 						burstThread.start();
 						burstThread.setProb((100.0-(double)BurstScroll.getValue())/100.0);
 					}
-					going = 1;
+					going = true;
 				}
-				break;	
 		}
 	    } catch(SynthException se) {
 		SynthAlert.showError(this,se);
 	    }
 	}
 
+	private void updateBarColor( int soundIndex, Scrollbar which )
+	{
+		Color goCol = new Color(0.9f, 0.1f, 0.2f);
+		Color stopCol = new Color(0.1f, 0.8f, 0.7f);
+		if (going) {
+			if (onoffstates[ soundIndex ] == 0) {
+				droneyThread.start();
+				droneyThread.setProb((100.0-(double)which.getValue())/100.0);
+				onoffs[ soundIndex ].setBackground(goCol);
+				onoffs[ soundIndex ].setForeground(Color.yellow);
+				onoffs[ soundIndex ].setLabel("+");
+				onoffstates[ soundIndex ] = 1;	// inclined to change to bool array
+			} else {
+				droneyThread.stopSound();
+				onoffs[ soundIndex ].setBackground(stopCol);
+				onoffs[ soundIndex ].setForeground(Color.white);
+				onoffs[ soundIndex ].setLabel("-");
+				onoffstates[ soundIndex ] = 0;
+			}
+		} else {
+			if (onoffstates[ soundIndex ] == 0) {
+				onoffs[ soundIndex ].setBackground(goCol);
+				onoffs[ soundIndex ].setForeground(Color.yellow);
+				onoffs[ soundIndex ].setLabel("+");
+				onoffstates[ soundIndex ] = 1;
+			} else {
+				onoffs[ soundIndex ].setBackground(stopCol);
+				onoffs[ soundIndex ].setForeground(Color.white);
+				onoffs[ soundIndex ].setLabel("-");
+				onoffstates[ soundIndex ] = 0;
+			}
+		}
+	}
 
 }
 
@@ -393,13 +317,13 @@ class myCanvas extends Canvas
 	Graphics cg,bg;
 	Speckle goDots;
 	Image bstore;
-	Image loochimage;
+	//Image loochimage;	// cut all these out as I have read access problems & I don't care about your dog
 	MediaTracker tracker = new MediaTracker(this);
 
-	public myCanvas(URL db)
+	public myCanvas()//URL db)
 	{
 		super();
-		loochimage = Toolkit.getDefaultToolkit().getImage(db);
+	//	loochimage = Toolkit.getDefaultToolkit().getImage(db);
 		goDots = new Speckle(210, 350);
 	}
 
@@ -407,7 +331,7 @@ class myCanvas extends Canvas
 	{
 		bstore = createImage(210, 350);
 		tracker.addImage(bstore, 0);
-		tracker.addImage(loochimage, 1);
+		//tracker.addImage(loochimage, 1);
 		try {
 			tracker.waitForID(0);
 			tracker.waitForID(1);
@@ -427,7 +351,7 @@ class myCanvas extends Canvas
 
 		// no idea why I have to do this... the MediaTracker
 		// should catch these errors, I thought
-		while ( (bstore == null) || (loochimage == null) )
+		while ( (bstore == null) )//|| (loochimage == null) )
 		{
 			try {
 				java.lang.Thread.sleep(10);
@@ -436,7 +360,7 @@ class myCanvas extends Canvas
 			}
 		}
 		g.drawImage(bstore, 0, 0, Color.white, this);
-		g.drawImage(loochimage, 3, 297, Color.white, this);
+	//	g.drawImage(loochimage, 3, 297, Color.white, this);
 
 		lfont = new Font("Times", Font.PLAIN, 10);
 		g.setFont(lfont);

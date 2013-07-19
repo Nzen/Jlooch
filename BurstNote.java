@@ -82,8 +82,7 @@ class BurstThread extends Thread
 	AddUnit			bDel1in, bDel2in;
 	LineOut 		noteOut;
 
-	public BurstThread()
-	throws SynthException
+	public BurstThread() throws SynthException
 	{
 		noteOut = new LineOut();
 		burstey = new Burst();
