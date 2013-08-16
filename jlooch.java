@@ -3,7 +3,8 @@
  * 		Brad Garton, fall 2001
  *
  Fixed some outdated stuff, Nicholas Prado 2013
-Many uses of stop should be replaced by code that simply modifies some variable to indicate that the target thread should stop running. The target thread should check this variable regularly, and return from its run method in an orderly fashion if the variable indicates that it is to stop running.
+"Many uses of stop should be replaced by code that simply modifies some variable to indicate that the target thread should stop running. The target thread should check this variable regularly, and return from its run method in an orderly fashion if the variable indicates that it is to stop running."
+changing int onoffstates[] to bool engaged[]
 */
 import java.util.*;
 import java.awt.*;
@@ -20,7 +21,7 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 	Scrollbar BurstScroll;
 	Button goButton;
 	Button [] onoffs = new Button[4];
-	int [] onoffstates = { 1, 1, 1, 1 };
+	boolean [] engaged = { true, true, true, true };
 	boolean going = false;
 	boolean started = false;
 	myCanvas drawArea;
@@ -47,7 +48,7 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		Font bfont;
 
 		Color fc = new Color(0.1f, 0.7f, 0.7f); // ugh. auto to double fooled us both
-		DroneScroll = new Scrollbar(Scrollbar.VERTICAL, 0, 50, 0, 110);
+		DroneScroll = new Scrollbar(Scrollbar.VERTICAL, 0, 100, 0, 110);
 		DroneScroll.setLocation(20, 45);
 		DroneScroll.setSize(25,200);
 		DroneScroll.setName("drones");
@@ -56,7 +57,7 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		add(DroneScroll);
 
 		fc = new Color(0.2f, 0.6f, 0.7f);
-		SeqScroll = new Scrollbar(Scrollbar.VERTICAL, 79, 50, 0, 110);
+		SeqScroll = new Scrollbar(Scrollbar.VERTICAL, 79, 100, 0, 110);
 		SeqScroll.setLocation(65, 45);
 		SeqScroll.setSize(25,200);
 		SeqScroll.setName("seqs");
@@ -65,7 +66,7 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		add(SeqScroll);
 
 		fc = new Color(0.3f, 0.5f, 0.7f);
-		WarbleScroll = new Scrollbar(Scrollbar.VERTICAL, 86, 50, 0, 110);
+		WarbleScroll = new Scrollbar(Scrollbar.VERTICAL, 86, 100, 0, 110);
 		WarbleScroll.setLocation(110, 45);
 		WarbleScroll.setSize(25,200);
 		WarbleScroll.setName("warbles");
@@ -74,7 +75,7 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		add(WarbleScroll);
 
 		fc = new Color(0.4f, 0.4f, 0.7f);
-		BurstScroll = new Scrollbar(Scrollbar.VERTICAL, 88, 50, 0, 110);
+		BurstScroll = new Scrollbar(Scrollbar.VERTICAL, 88, 100, 0, 110);
 		BurstScroll.setLocation(155, 45);
 		BurstScroll.setSize(25,200);
 		BurstScroll.setName("bursts");
@@ -102,13 +103,13 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		fc = new Color(0.2f, 0.7f, 0.8f);
 		goButton = new Button();
 		goButton.setLocation(65, 270);
-		goButton.setSize(70, 20);
+		goButton.setSize(90, 20);
 		goButton.setBackground(fc);
 		bfont = new Font("Times", Font.ITALIC, 10);
 		goButton.setFont(bfont);
 		fc = new Color(0.9f, 0.1f, 0.1f);
 		goButton.setForeground(fc);
-		goButton.setLabel("drono...");
+		goButton.setLabel("Go...");
 		goButton.setName("main");
 		goButton.addActionListener(this);
 		add(goButton);
@@ -150,13 +151,13 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		try
 		{
 			if (going) {
-				if (onoffstates[0] == 1) {
+				if (engaged[0]) {
 					droneyThread.stopSound(); }
-				if (onoffstates[1] == 1) {
+				if (engaged[1]) {
 					seqThread.stopSound(); }
-				if (onoffstates[2] == 1) {
+				if (engaged[2]) {
 					warbleThread.stopSound(); }
-				if (onoffstates[3] == 1) {
+				if (engaged[3]) {
 					burstThread.stopSound(); }
 			}
 			droneyThread = null;
@@ -230,18 +231,18 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 					goButton.setBackground(col);
 					col = new Color(0.9f, 0.1f, 0.1f);
 					goButton.setForeground(col);
-					goButton.setLabel("drono...");
+					goButton.setLabel("Go...");
 
-					if (onoffstates[0] == 1) {
+					if (engaged[0]) {
 						droneyThread.stopSound();
 					}
-					else if (onoffstates[1] == 1) { // I'm putting elses, but what if these...
+					else if (engaged[1]) {
 						seqThread.stopSound();
 					}
-					else if (onoffstates[2] == 1) {
+					else if (engaged[2]) {
 						warbleThread.stopSound();
 					}
-					else if (onoffstates[3] == 1) {
+					else if (engaged[3]) {
 						burstThread.stopSound();
 					}
 					going = false;
@@ -250,21 +251,21 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 					goButton.setBackground(col);
 					col = new Color(0.9f, 0.1f, 0.1f);
 					goButton.setForeground(col);
-					goButton.setLabel("StopEm!");
+					goButton.setLabel("Stop");
 
-					if (onoffstates[0] == 1) {
+					if (engaged[0]) {
 						droneyThread.start();
 						droneyThread.setProb((100.0-(double)DroneScroll.getValue())/100.0);
 					}
-					if (onoffstates[1] == 1) {
+					if (engaged[1]) {
 						seqThread.start();
 						seqThread.setProb((100.0-(double)SeqScroll.getValue())/100.0);
 					}
-					if (onoffstates[2] == 1) {
+					if (engaged[2]) {
 						warbleThread.start();
 						warbleThread.setProb((100.0-(double)WarbleScroll.getValue())/100.0);
 					}
-					if (onoffstates[3] == 1) {
+					if (engaged[3]) {
 						burstThread.start();
 						burstThread.setProb((100.0-(double)BurstScroll.getValue())/100.0);
 					}
@@ -281,31 +282,31 @@ public class jlooch extends Applet implements AdjustmentListener, ActionListener
 		Color goCol = new Color(0.9f, 0.1f, 0.2f);
 		Color stopCol = new Color(0.1f, 0.8f, 0.7f);
 		if (going) {
-			if (onoffstates[ soundIndex ] == 0) {
+			if ( !engaged[ soundIndex ] ) {
 				droneyThread.start();
 				droneyThread.setProb((100.0-(double)which.getValue())/100.0);
 				onoffs[ soundIndex ].setBackground(goCol);
 				onoffs[ soundIndex ].setForeground(Color.yellow);
 				onoffs[ soundIndex ].setLabel("+");
-				onoffstates[ soundIndex ] = 1;	// inclined to change to bool array
+				engaged[ soundIndex ] = true;
 			} else {
 				droneyThread.stopSound();
 				onoffs[ soundIndex ].setBackground(stopCol);
 				onoffs[ soundIndex ].setForeground(Color.white);
 				onoffs[ soundIndex ].setLabel("-");
-				onoffstates[ soundIndex ] = 0;
+				engaged[ soundIndex ] = false;
 			}
 		} else {
-			if (onoffstates[ soundIndex ] == 0) {
+			if ( !engaged[ soundIndex ] ) {
 				onoffs[ soundIndex ].setBackground(goCol);
 				onoffs[ soundIndex ].setForeground(Color.yellow);
 				onoffs[ soundIndex ].setLabel("+");
-				onoffstates[ soundIndex ] = 1;
+				engaged[ soundIndex ] = true;
 			} else {
 				onoffs[ soundIndex ].setBackground(stopCol);
 				onoffs[ soundIndex ].setForeground(Color.white);
 				onoffs[ soundIndex ].setLabel("-");
-				onoffstates[ soundIndex ] = 0;
+				engaged[ soundIndex ] = false;
 			}
 		}
 	}
@@ -317,7 +318,7 @@ class myCanvas extends Canvas
 	Graphics cg,bg;
 	Speckle goDots;
 	Image bstore;
-	//Image loochimage;	// cut all these out as I have read access problems & I don't care about your dog
+	//Image loochimage;	// cut all these out as I have read access problems
 	MediaTracker tracker = new MediaTracker(this);
 
 	public myCanvas()//URL db)
