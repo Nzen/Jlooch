@@ -1,3 +1,8 @@
+
+Jlooch is a digital sound synthesis gui implemented with [jsyn](http://www.softsynth.com/jsyn/beta/). I'm involved because the original is an applet, and applets were EoL back when I first encountered this.
+
+Original readme :
+
 To compile and run jlooch, you will need the JSyn Developer SDK available
 from http://www.softsynth.com/jsyn/ (it's free -- yay!).  You will also
 need java and the java SDK, of course.
