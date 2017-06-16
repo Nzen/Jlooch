@@ -3,7 +3,10 @@
  * 		Brad Garton, fall 2001
  *
  Fixed some outdated stuff, Nicholas Prado 2013
-"Many uses of stop should be replaced by code that simply modifies some variable to indicate that the target thread should stop running. The target thread should check this variable regularly, and return from its run method in an orderly fashion if the variable indicates that it is to stop running."
+"Many uses of stop should be replaced by code that simply modifies some variable
+to indicate that the target thread should stop running. The target thread should
+check this variable regularly, and return from its run method in an orderly fashion
+if the variable indicates that it is to stop running."
 changing int onoffstates[] to bool engaged[]
 */
 import java.util.*;
